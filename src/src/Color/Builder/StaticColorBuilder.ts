@@ -4,10 +4,19 @@ import chroma, {Color} from "chroma-js";
 export default class StaticColorBuilder extends ColorBuilderInterface {
 
     private _color: string;
+    private static instance: StaticColorBuilder;
 
-    public constructor() {
+    private constructor() {
         super();
         this._color = '#000000';
+    }
+
+    public static getInstance(): StaticColorBuilder
+    {
+        if (!this.instance) {
+            this.instance = new StaticColorBuilder();
+        }
+        return this.instance;
     }
 
     /**

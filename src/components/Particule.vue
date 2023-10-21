@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import {ref, PropType, Ref, onMounted} from 'vue';
-import NoiseColorBuilder from "../src/Color/Builder/NoiseColorBuilder.ts";
+import {PropType, onMounted} from 'vue';
 import {useCanvasStore} from "../store/canvasStore.ts";
 import {Position, Size} from "../src/Particule/ParticuleBuilder.ts";
-import {Color} from "chroma-js";
+import ColorBuilder from "../src/Color/ColorBuilderInterface.ts";
 const {addParticule} = useCanvasStore();
 const props = defineProps({
   position: {
@@ -18,26 +17,18 @@ const props = defineProps({
   },
 
   color: {
-    type: Object as PropType<Ref<Color>>,
-    required: false,
-    default: () => ref(NoiseColorBuilder.create().setX(0).setY(0).build())
+    type: Object as PropType<ColorBuilder>,
+    required: true,
   }
 });
 
-export type ParticuleType = {
-  position: Position;
-  size: Size;
-  color: Ref<Color>;
-};
+
 
 onMounted(() => {
-
-  const color = props.color;
-
   addParticule({
     position: props.position,
     size: props.size,
-    color: color,
+    color: props.color,
   })
 });
 

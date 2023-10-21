@@ -7,12 +7,21 @@ export default class NoiseColorBuilder extends ColorBuilderInterface {
     private _seed: number
     private _x: number;
     private _y: number;
+    private static instance: NoiseColorBuilder;
 
     public constructor() {
         super();
         this.setSeed(Math.random())
             .setX(0)
             .setY(0);
+    }
+
+    public static getInstance(): NoiseColorBuilder
+    {
+        if (!this.instance) {
+            this.instance = new NoiseColorBuilder();
+        }
+        return this.instance;
     }
 
     public static create(): NoiseColorBuilder {

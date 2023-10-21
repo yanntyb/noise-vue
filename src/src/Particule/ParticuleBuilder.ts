@@ -1,8 +1,6 @@
-import Particule from "../../components/Particule.vue";
-import {VNode} from "@vue/runtime-core";
-import { h } from "vue";
 import ColorBuilderInterface from "../Color/ColorBuilderInterface.ts";
 import StaticColorBuilder from "../Color/Builder/StaticColorBuilder.ts";
+import ColorBuilder from "../Color/ColorBuilderInterface.ts";
 
 export interface Position {
     x: number;
@@ -14,22 +12,33 @@ export interface Size {
     height: number;
 }
 
+export type ParticuleType<ColorBuilderType extends ColorBuilder> = {
+    position: Position;
+    size: Size;
+    color: ColorBuilderType;
+};
+
 export default class ParticuleBuilder {
     private _position: Position;
     private _colorBuilder: ColorBuilderInterface;
     private _size: Size;
+    private static instance: ParticuleBuilder;
 
     private constructor() {
         this.setPosition({x: 200, y: 200})
             .setSize({width: 10, height: 10})
-            .setColorBuilder((new StaticColorBuilder).setColor('#cb0808'))
+            .setColorBuilder(StaticColorBuilder.getInstance().setColor('#cb0808'))
         ;
     }
 
-    public static create(): ParticuleBuilder
+    public static getInstance(): ParticuleBuilder
     {
-        return new ParticuleBuilder();
+        if (!this.instance) {
+            this.instance = new ParticuleBuilder();
+        }
+        return this.instance;
     }
+
 
     public setColorBuilder(builder: ColorBuilderInterface): this
     {
@@ -49,12 +58,12 @@ export default class ParticuleBuilder {
         return this;
     }
 
-    public build(): VNode
+    public build(): ParticuleType<any>
     {
-        return h(Particule, {
+        return {
             position: this._position,
-            color: this._colorBuilder.buildRef(),
+            color: this._colorBuilder,
             size: this._size,
-        })
+        };
     }
 }

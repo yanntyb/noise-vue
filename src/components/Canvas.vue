@@ -1,24 +1,82 @@
 <script setup lang="ts">
 
-import {computed} from "vue";
+import {onMounted, Ref, ref} from "vue";
+import {map} from "modern-async";
+import {useCanvasStore} from "../store/canvasStore.ts";
+import ParticuleBuilder, {Position} from "../src/Particule/ParticuleBuilder.ts";
+import NoiseColorBuilder from "../src/Color/Builder/NoiseColorBuilder.ts";
+const {setCanvas, drawParticules, addParticule} = useCanvasStore();
 
-const props = defineProps({
-  size: {
-    type: Number,
-    required: true,
-  }
-});
+let canvas: Ref<HTMLCanvasElement> = ref(null);
 
-const getSize = computed(() => props.size + 'px');
+const canvasWidth = ref(window.innerWidth);
+const canvasHeight = ref(window.innerHeight);
+
+const particuleWidth = ref(10);
+const particuleHeight = ref(10);
+
+const density = ref(0.7);
+
+
+const createParticules = (noiseSeed: number = Math.random()) => {
+  const x: number[] = Array(50)
+      .fill(null,0, Math.floor(canvasWidth.value));
+
+
+  const y: number[] = Array(50)
+      .fill(null,0, Math.floor(canvasHeight.value));
+
+  const matrix: Position[] = [];
+  x.forEach((_, x: number) => y.forEach((_2, y: number) => matrix.push({ x: x, y: y})));
+
+
+  matrix.forEach((position: Position) => {
+    addParticule(
+        ParticuleBuilder.getInstance()
+            .setPosition(
+                {
+                  x: position.x * 10,
+                  y: position.y * 10,
+                }
+            )
+            .setSize({width: particuleWidth.value , height: particuleHeight.value})
+            .setColorBuilder(
+                new NoiseColorBuilder()
+                    .setSeed(noiseSeed)
+                    .setX(position.x * particuleWidth.value)
+                    .setY(position.y * particuleHeight.value)
+            )
+            .build()
+    );
+  });
+}
+
+onMounted(async () => {
+  setCanvas(canvas.value.getContext("2d"));
+  createParticules()
+  drawParticules(1)
+
+})
+
+
+
+
+
+
+//
+// drawParticules(1)
+//     .then(await createParticules())
+//     .then(await drawParticules())
+
+
+;
+
+
 
 </script>
 
 <template>
-  <div id="canvas-container">
-    <div id="canvas">
-      <slot/>
-    </div>
-  </div>
+  <canvas :width="canvasWidth" :height="canvasHeight" id="canvas" ref="canvas"/>
 </template>
 
 <style lang="scss" scoped>
@@ -30,13 +88,6 @@ const getSize = computed(() => props.size + 'px');
   justify-content: center;
   align-items: center;
   position: absolute;
-
-  #canvas {
-    position: relative;
-    width: v-bind(getSize);
-    height: v-bind(getSize);
-    background-color: black;
-  }
 }
 
 </style>
