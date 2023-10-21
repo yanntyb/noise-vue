@@ -4,29 +4,39 @@ import {onMounted, Ref, ref} from "vue";
  import {useCanvasStore} from "../store/canvasStore.ts";
 import ParticuleBuilder, {Position} from "../src/Particule/ParticuleBuilder.ts";
 import NoiseColorBuilder from "../src/Color/Builder/NoiseColorBuilder.ts";
-const {setCanvas, drawParticules, addParticule, getParticules, drawParticuleAt} = useCanvasStore();
+const {setCanvas, drawParticules, addParticule, deleteOldParticules, enableCameraMovement, initCameraMovement} = useCanvasStore();
+import chroma from "chroma-js";
+import StaticColorBuilder from "../src/Color/Builder/StaticColorBuilder.ts";
+import SetIntervalDrawer from "../src/Particule/Drawer/SetIntervalDrawer.ts";
 
 let canvas: Ref<HTMLCanvasElement> = ref(null);
 
-const canvasWidth = ref(window.innerWidth);
-const canvasHeight = ref(window.innerHeight);
+const canvasWidth = ref(300);
+const canvasHeight = ref(300);
 
-const particuleWidth = ref(10);
-const particuleHeight = ref(10);
+const particuleWidth = ref(40);
+const particuleHeight = ref(40);
+const baseColor = ref('#000000');
+const xDensity = ref(1);
+const yDensity = ref(1);
 
-const density = ref(0.7);
-
-
-const createParticules = (
-    noiseSeed: number = Math.random(),
-    xCount: number = Math.floor(canvasWidth.value / particuleWidth.value),
-    yCount: number = Math.floor(canvasHeight.value / particuleHeight.value),
-) => {
-  const x: number[] = Array(xCount).fill(null);
-  const y: number[] = Array(yCount).fill(null);
+const createParticules = () => {
+  xDensity.value = Math.floor(canvasWidth.value / particuleWidth.value);
+  yDensity.value = Math.floor(canvasHeight.value / particuleHeight.value);
+  const x: number[] = Array(xDensity.value).fill(null);
+  const y: number[] = Array(yDensity.value).fill(null);
 
   const matrix: Position[] = [];
   x.forEach((_, x: number) => y.forEach((_2, y: number) => matrix.push({ x: x, y: y})));
+
+  const baseColorObject = StaticColorBuilder.getInstance()
+      .setColor(chroma.random().hex())
+      .build();
+
+  baseColor.value = baseColorObject.hex();
+
+  const colorBuilder =  NoiseColorBuilder.getInstance()
+      .setBaseColor(baseColorObject)
 
   matrix.forEach((position: Position) => {
     addParticule(
@@ -38,41 +48,100 @@ const createParticules = (
                 }
             )
             .setSize({width: particuleWidth.value , height: particuleHeight.value})
-            .setColorBuilder(
-                new NoiseColorBuilder()
-                    .setSeed(noiseSeed)
-                    .setX(position.x * particuleWidth.value)
-                    .setY(position.y * particuleHeight.value)
-            )
+            .setColorBuilder(colorBuilder)
             .build()
     );
   });
 }
 
+const start = () => {
+  deleteOldParticules();
+  createParticules();
+  drawParticules(SetIntervalDrawer.getInstance());
+  initCameraMovement(particuleWidth.value, particuleHeight.value)
+}
+
 onMounted(async () => {
   setCanvas(canvas.value.getContext("2d"));
-  createParticules(Math.random());
-  await drawParticules()
+  start();
 
 });
-
-
 
 </script>
 
 <template>
-  <canvas :width="canvasWidth" :height="canvasHeight" id="canvas" ref="canvas"/>
+  <canvas
+      :width="canvasWidth"
+      :height="canvasHeight"
+      id="canvas"
+      ref="canvas"
+      :style="{borderColor: baseColor}"
+  />
+  <div id="vision" :style="{width: canvasWidth * 1.5 + 'px', height: canvasHeight * 1.5 + 'px'}"/>
+  <div id="generation-info">
+    <span>Couleur de base:  <input type="text" v-model="baseColor"></span><br/>
+    <span>Largeur du canvas: <input type="number" v-model="canvasWidth"></span><br/>
+    <span>Hauteur du canvas: <input type="number" v-model="canvasHeight"></span><br/>
+    <span>Largeur des particules: <input type="number" v-model="particuleWidth"></span><br/>
+    <span>Hauteur des particules: <input type="number" v-model="particuleHeight"></span><br/>
+    <span>
+      Mouvement actif
+      <input checked type="checkbox" @change="(e: InputEvent) => enableCameraMovement(e.target.checked)">
+    </span>
+    <div :style="{
+      backgroundColor: baseColor,
+      width: particuleWidth + 'px',
+      height: particuleHeight + 'px',
+    }"/>
+    <button id="restart" @click="start">Regénérer</button>
+  </div>
 </template>
 
 <style lang="scss" scoped>
-#canvas-container {
-  width: 100vw;
-  height: 100vh;
-  background-color: black;
+
+#canvas {
+  border: 1px solid;
+  position: absolute;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+#vision {
+  border: 1px solid white;
+  z-index: 100;
+}
+
+#generation-info {
   position: absolute;
+  top: 0;
+  left: 0;
+  color: white;
+  font-size: 20px;
+  font-family: monospace;
+  padding: 10px;
+
+  input {
+    background-color: transparent;
+    border: none;
+    color: white;
+    font-size: 20px;
+    font-family: monospace;
+    padding: 10px;
+    outline: none;
+  }
+
+  #restart{
+    background-color: transparent;
+    border: 1px solid white;
+    color: white;
+    font-size: 20px;
+    font-family: monospace;
+    padding: 10px;
+    outline: none;
+    cursor: pointer;
+  }
+
 }
 
 </style>

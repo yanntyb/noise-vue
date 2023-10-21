@@ -7,6 +7,7 @@ export default class NoiseColorBuilder extends ColorBuilderInterface {
     private _seed: number
     private _x: number;
     private _y: number;
+    private _baseColor: Color;
     private static instance: NoiseColorBuilder;
 
     public constructor() {
@@ -47,8 +48,15 @@ export default class NoiseColorBuilder extends ColorBuilderInterface {
         return this;
     }
 
+    public setBaseColor(color: Color): this
+    {
+        this._baseColor = color;
+        return this;
+    }
+
     public build(): Color {
         const value = createNoise2D(alea(this._seed))(this._x, this._y);
-        return chroma.rgb(0, 0, 255 * value, 1);
+        const [r, g, b] = this._baseColor.rgb();
+        return chroma.rgb(r, g, b, value);
     }
 }
