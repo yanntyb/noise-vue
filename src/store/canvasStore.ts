@@ -2,8 +2,8 @@ import { defineStore } from 'pinia'
 import {Ref, ref} from "vue";
 import ColorBuilder from "../src/Color/ColorBuilderInterface.ts";
 import {useArray} from "../utils/composable/useArray.ts";
-import {ParticuleType} from "../src/Particule/ParticuleBuilder.ts";
-import { map } from 'modern-async'
+import {ParticuleType, Position} from "../src/Particule/ParticuleBuilder.ts";
+import { map, sleep} from 'modern-async'
 
 export const useCanvasStore = defineStore('canvas', () =>{
 
@@ -26,26 +26,27 @@ export const useCanvasStore = defineStore('canvas', () =>{
         return particules;
     }
 
-    const drawParticules = async (parallelDrawingCount: number = 2): Promise<any> => {
-
-        const partitions = useArray().chunkArray(
-            particules.value as [],
-            Math.ceil(particules.value.length / parallelDrawingCount)
+    const drawParticuleAt = async (position: Position): Promise<any> => {
+        const particule = particules.value
+            .find((particule: Ref<ParticuleType<any>>) => particule.value.position === position);
+        canvas.value.fillStyle = particule.value.color.build().hex();
+        canvas.value.fillRect(
+            particule.value.position.x,
+            particule.value.position.y,
+            particule.value.size.width,
+            particule.value.size.height
         );
-
-        return await map(partitions, async (partition: Ref<ParticuleType<any>>[]) => {
-            await map(partition, async (particule: Ref<ParticuleType<any>>) => {
-                canvas.value.fillStyle = particule.value.color.build().hex();
-                canvas.value.fillRect(
-                    particule.value.position.x,
-                    particule.value.position.y,
-                    particule.value.size.width,
-                    particule.value.size.height
-                );
-            });
-        });
     }
 
-    return {getCanvas, setCanvas, addParticule, getParticules, drawParticules};
+    const drawParticules = async (): Promise<any> => {
+        Array(particules.value.length)
+            .fill(0).forEach((_, index) => {
+                window.setInterval(() => {
+                    drawParticuleAt(particules.value[index].value.position);
+                })
+            })
+    }
+
+    return {getCanvas, setCanvas, addParticule, getParticules, drawParticules, drawParticuleAt};
 
 });
