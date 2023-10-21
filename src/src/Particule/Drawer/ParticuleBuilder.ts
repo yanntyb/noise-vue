@@ -1,6 +1,6 @@
-import ColorBuilderInterface from "../Color/ColorBuilderInterface.ts";
-import StaticColorBuilder from "../Color/Builder/StaticColorBuilder.ts";
-import ColorBuilder from "../Color/ColorBuilderInterface.ts";
+import ColorBuilderInterface from "../../Color/ColorBuilderInterface.ts";
+import StaticColorBuilder from "../../Color/Builder/StaticColorBuilder.ts";
+import ColorBuilder from "../../Color/ColorBuilderInterface.ts";
 
 export interface Position {
     x: number;

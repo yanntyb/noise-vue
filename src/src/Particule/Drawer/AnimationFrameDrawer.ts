@@ -1,5 +1,5 @@
 import ParticuleDrawerInterface from "./ParticuleDrawerInterface.ts";
-import {Position} from "../ParticuleBuilder.ts";
+import {Position} from "./ParticuleBuilder.ts";
 
 export default class AnimationFrameDrawer extends ParticuleDrawerInterface {
     private static _instance: AnimationFrameDrawer;

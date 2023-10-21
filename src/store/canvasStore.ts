@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import {Ref, ref} from "vue";
 import ColorBuilder from "../src/Color/ColorBuilderInterface.ts";
-import {ParticuleType, Position} from "../src/Particule/ParticuleBuilder.ts";
+import {ParticuleType, Position} from "../src/Particule/Drawer/ParticuleBuilder.ts";
 import NoiseColorBuilder from "../src/Color/Builder/NoiseColorBuilder.ts";
 import {onKeyStroke} from "@vueuse/core";
 import ParticuleDrawerInterface from "../src/Particule/Drawer/ParticuleDrawerInterface.ts";
+import ParticuleDrawerAtInterface from "../src/Particule/DrawerAt/ParticuleDrawerAtInterface.ts";
 
 export const useCanvasStore = defineStore('canvas', () =>{
 
@@ -28,33 +29,18 @@ export const useCanvasStore = defineStore('canvas', () =>{
     }
 
 
-    const drawParticuleAt = async (position: Position): Promise<any> => {
-        const particule = particules.value
-            .find((particule: Ref<ParticuleType<NoiseColorBuilder>>) => particule.value.position === position);
-        canvas.value.fillStyle = particule.value.color
-            .setSeed(1)
-            .setX(particule.value.position.x + cameraPosition.value.x)
-            .setY(particule.value.position.y + cameraPosition.value.y)
-            .build()
-            .hex();
-
-        canvas.value.clearRect(
-            particule.value.position.x,
-            particule.value.position.y,
-            particule.value.size.width,
-            particule.value.size.height
-        );
-
-        canvas.value.fillRect(
-            particule.value.position.x,
-            particule.value.position.y,
-            particule.value.size.width,
-            particule.value.size.height
-        );
-    }
+    const drawParticuleAt =
+        async (position: Position, drawer: ParticuleDrawerAtInterface): Promise<any> => drawer
+                .setParticules(particules.value)
+                .setCanvas(canvas)
+                .setPosition(position)
+                .setCameraPosition(cameraPosition)
+                .drawParticuleAt(position);
 
     const drawParticules =
-        async (drawer: ParticuleDrawerInterface): Promise<any> => drawer.setParticule(particules.value).drawParticules(drawParticuleAt);
+        async (drawer: ParticuleDrawerInterface, singleParticuleDrawer: ParticuleDrawerAtInterface): Promise<any> => drawer
+                .setParticules(particules.value)
+                .drawParticules((position: Position) => drawParticuleAt(position, singleParticuleDrawer));
 
     const deleteOldParticules = () => {
         particules.value = [];

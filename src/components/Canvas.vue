@@ -2,23 +2,31 @@
 
 import {onMounted, Ref, ref} from "vue";
  import {useCanvasStore} from "../store/canvasStore.ts";
-import ParticuleBuilder, {Position} from "../src/Particule/ParticuleBuilder.ts";
+import ParticuleBuilder, {Position} from "../src/Particule/Drawer/ParticuleBuilder.ts";
 import NoiseColorBuilder from "../src/Color/Builder/NoiseColorBuilder.ts";
 const {setCanvas, drawParticules, addParticule, deleteOldParticules, enableCameraMovement, initCameraMovement} = useCanvasStore();
 import chroma from "chroma-js";
 import StaticColorBuilder from "../src/Color/Builder/StaticColorBuilder.ts";
 import SetIntervalDrawer from "../src/Particule/Drawer/SetIntervalDrawer.ts";
+import TextParticule from "../src/Particule/DrawerAt/TextParticule.ts";
 
 let canvas: Ref<HTMLCanvasElement> = ref(null);
 
-const canvasWidth = ref(300);
-const canvasHeight = ref(300);
+const canvasWidth = ref(window.innerWidth * 1.2);
+const canvasHeight = ref(window.innerHeight * 1.2);
 
-const particuleWidth = ref(40);
-const particuleHeight = ref(40);
+const particuleWidth = ref(30);
+const particuleHeight = ref(10);
 const baseColor = ref('#000000');
 const xDensity = ref(1);
 const yDensity = ref(1);
+
+const getCanvasStyle = () => {
+  return {
+    maxWidth: window.innerWidth + 'px',
+    maxHeight: window.innerHeight + 'px',
+  }
+}
 
 const createParticules = () => {
   xDensity.value = Math.floor(canvasWidth.value / particuleWidth.value);
@@ -33,7 +41,7 @@ const createParticules = () => {
       .setColor(chroma.random().hex())
       .build();
 
-  baseColor.value = baseColorObject.hex();
+  baseColor.value = baseColor.value ? baseColor.value : baseColorObject.hex();
 
   const colorBuilder =  NoiseColorBuilder.getInstance()
       .setBaseColor(baseColorObject)
@@ -55,10 +63,15 @@ const createParticules = () => {
 }
 
 const start = () => {
+  const random = Math.random().toString();
   deleteOldParticules();
   createParticules();
-  drawParticules(SetIntervalDrawer.getInstance());
-  initCameraMovement(particuleWidth.value, particuleHeight.value)
+  drawParticules(
+      SetIntervalDrawer.getInstance(),
+      TextParticule.getInstance()
+          .fillTextUsing((seeded) => 'YANN')
+  );
+  initCameraMovement(particuleWidth.value, particuleHeight.value);
 }
 
 onMounted(async () => {
@@ -75,9 +88,8 @@ onMounted(async () => {
       :height="canvasHeight"
       id="canvas"
       ref="canvas"
-      :style="{borderColor: baseColor}"
+      :style="getCanvasStyle()"
   />
-  <div id="vision" :style="{width: canvasWidth * 1.5 + 'px', height: canvasHeight * 1.5 + 'px'}"/>
   <div id="generation-info">
     <span>Couleur de base:  <input type="text" v-model="baseColor"></span><br/>
     <span>Largeur du canvas: <input type="number" v-model="canvasWidth"></span><br/>
@@ -88,11 +100,6 @@ onMounted(async () => {
       Mouvement actif
       <input checked type="checkbox" @change="(e: InputEvent) => enableCameraMovement(e.target.checked)">
     </span>
-    <div :style="{
-      backgroundColor: baseColor,
-      width: particuleWidth + 'px',
-      height: particuleHeight + 'px',
-    }"/>
     <button id="restart" @click="start">Regénérer</button>
   </div>
 </template>
@@ -100,7 +107,6 @@ onMounted(async () => {
 <style lang="scss" scoped>
 
 #canvas {
-  border: 1px solid;
   position: absolute;
   display: flex;
   justify-content: center;

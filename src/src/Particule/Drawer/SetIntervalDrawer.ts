@@ -1,5 +1,5 @@
 import ParticuleDrawerInterface from "./ParticuleDrawerInterface.ts";
-import {Position} from "../ParticuleBuilder.ts";
+import {Position} from "./ParticuleBuilder.ts";
 
 export default class SetIntervalDrawer extends ParticuleDrawerInterface {
     public static _instance: SetIntervalDrawer;
@@ -17,6 +17,7 @@ export default class SetIntervalDrawer extends ParticuleDrawerInterface {
             .map((_, index) => index);
 
         indexes = indexes
+            .sort(() => 0.5 - Math.random())
             .sort(() => 0.5 - Math.random())
             .sort(() => 0.5 - Math.random());
 
