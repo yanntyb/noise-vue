@@ -1,7 +1,6 @@
 import ParticuleDrawerAtInterface from "./ParticuleDrawerAtInterface.ts";
 import {Ref} from "vue";
-import {ParticuleType, Position} from "../Drawer/ParticuleBuilder.ts";
-import NoiseColorBuilder from "../../Color/Builder/NoiseColorBuilder.ts";
+import {ParticuleType} from "../ParticuleBuilder.ts";
 
 export default class ColorParticule extends ParticuleDrawerAtInterface {
     public static instance: ColorParticule;
@@ -18,20 +17,27 @@ export default class ColorParticule extends ParticuleDrawerAtInterface {
         return this.instance;
     }
 
-    public async drawParticuleAt(position: Position): Promise<any> {
-        const particule = this.particules
-            .find((particule: Ref<ParticuleType<NoiseColorBuilder>>) => particule.value.position === position);
+    public async drawSingleParticule(particule: Ref<ParticuleType>): Promise<any> {
+        if (!particule.value.canvasColor) {
+            particule.value.canvasColor = particule.value.colorBuilder
+                .setOptions({
+                    ...particule.value.colorBuilder.options,
+                    position: particule.value.position,
+                })
+                .build();
 
-        this.canvas.value.fillStyle = particule.value.color
-            .setSeed(1)
-            .setX(particule.value.position.x + this.cameraPosition.value.x)
-            .setY(particule.value.position.y + this.cameraPosition.value.y)
-            .build()
-            .hex();
+        }
+
+        this.canvas.value.fillStyle = particule.value.canvasColor.hex();
+        this.modifyPosition(particule);
+
+        if (!this.hasToRedraw(particule.value)) {
+            return;
+        }
 
         this.canvas.value.clearRect(
-            particule.value.position.x,
-            particule.value.position.y,
+            particule.value.lastPosition?.x,
+            particule.value.lastPosition?.y,
             particule.value.size.width,
             particule.value.size.height
         );
@@ -42,5 +48,11 @@ export default class ColorParticule extends ParticuleDrawerAtInterface {
             particule.value.size.width,
             particule.value.size.height
         );
+
+        particule.value.lastPosition =  particule.value.position;
+    }
+
+    private modifyPosition(particule: Ref<ParticuleType>): void {
+        particule.value.position = particule.value.positionModifier?.getModifierPosition(particule) ?? particule.value.position;
     }
 }

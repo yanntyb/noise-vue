@@ -1,4 +1,4 @@
-import ColorBuilderInterface from "../ColorBuilderInterface.ts";
+import ColorBuilderInterface from "./ColorBuilderInterface.ts";
 import chroma, {Color} from "chroma-js";
 
 export default class RandomColorBuilder extends ColorBuilderInterface {

@@ -1,6 +1,6 @@
 import ParticuleDrawerAtInterface from "./ParticuleDrawerAtInterface.ts";
 import {Ref} from "vue";
-import {ParticuleType, Position} from "../Drawer/ParticuleBuilder.ts";
+import {ParticuleType, Position} from "../ParticuleBuilder.ts";
 import NoiseColorBuilder from "../../Color/Builder/NoiseColorBuilder.ts";
 
 export default class TextParticule extends ParticuleDrawerAtInterface {
@@ -25,19 +25,19 @@ export default class TextParticule extends ParticuleDrawerAtInterface {
         return this;
     }
 
-    public async drawParticuleAt(position: Position): Promise<any> {
+    public async drawSingleParticule(position: Position): Promise<any> {
         const particule = this.particules
             .find((particule: Ref<ParticuleType<NoiseColorBuilder>>) => particule.value.position === position);
 
-         particule.value.color
+         particule.value.colorBuilder
             .setSeed(1)
             .setX(particule.value.position.x + this.cameraPosition.value.x)
             .setY(particule.value.position.y + this.cameraPosition.value.y)
             .build();
 
-        const noised = particule.value.color.getValue();
+        const noised = particule.value.colorBuilder.getValue();
 
-        this.canvas.value.fillStyle = particule.value.color.build().hex();
+        this.canvas.value.fillStyle = particule.value.colorBuilder.build().hex();
         this.canvas.value.font = particule.value.size.width + "px Arial";
 
         // this.canvas.value.clearRect(

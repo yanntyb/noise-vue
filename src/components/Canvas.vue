@@ -1,25 +1,25 @@
 <script setup lang="ts">
 
 import {onMounted, Ref, ref} from "vue";
- import {useCanvasStore} from "../store/canvasStore.ts";
-import ParticuleBuilder, {Position} from "../src/Particule/Drawer/ParticuleBuilder.ts";
+import {useCanvasStore} from "../store/canvasStore.ts";
+import {useCameraStore} from "../store/cameraStore.ts";
+import ParticuleBuilder, {Position} from "../src/Particule/ParticuleBuilder.ts";
 import NoiseColorBuilder from "../src/Color/Builder/NoiseColorBuilder.ts";
-const {setCanvas, drawParticules, addParticule, deleteOldParticules, enableCameraMovement, initCameraMovement} = useCanvasStore();
+const {setCanvas, drawParticules, addParticule, deleteOldParticules} = useCanvasStore();
+const {getCameraPosition, initCameraMovement, enableCameraMovement} = useCameraStore();
 import chroma from "chroma-js";
 import StaticColorBuilder from "../src/Color/Builder/StaticColorBuilder.ts";
 import SetIntervalDrawer from "../src/Particule/Drawer/SetIntervalDrawer.ts";
-import TextParticule from "../src/Particule/DrawerAt/TextParticule.ts";
+import ColorParticule from "../src/Particule/DrawerAt/ColorParticule.ts";
+import CameraFollower from "../src/Particule/Position/CameraFollower.ts";
+import AnimationFrameDrawer from "../src/Particule/Drawer/AnimationFrameDrawer.ts";
+import RandomSorter from "../src/Particule/Drawer/BeforeDrawingAtSorter/RandomSorter.ts";
+import LastPositionChangeRedrawChecker from "../src/Particule/RedrawChecker/LastPositionChangeRedrawChecker.ts";
+import DrawOnceDrawer from "../src/Particule/Drawer/DrawOnceDrawer.ts";
 
 let canvas: Ref<HTMLCanvasElement> = ref(null);
 
-const canvasWidth = ref(window.innerWidth * 1.2);
-const canvasHeight = ref(window.innerHeight * 1.2);
 
-const particuleWidth = ref(30);
-const particuleHeight = ref(10);
-const baseColor = ref('#000000');
-const xDensity = ref(1);
-const yDensity = ref(1);
 
 const getCanvasStyle = () => {
   return {
@@ -28,80 +28,123 @@ const getCanvasStyle = () => {
   }
 }
 
-const createParticules = () => {
-  xDensity.value = Math.floor(canvasWidth.value / particuleWidth.value);
-  yDensity.value = Math.floor(canvasHeight.value / particuleHeight.value);
-  const x: number[] = Array(xDensity.value).fill(null);
-  const y: number[] = Array(yDensity.value).fill(null);
+const createTerrain = () => {
+  const canvasWidth = 1200;
+  const canvasHeight = 1200;
+
+  const particuleWidth = 100;
+  const particuleHeight = 100;
+  const xParticuleCount = Math.floor(canvasWidth / particuleWidth);
+  const yParticuleCount = Math.floor(canvasHeight / particuleHeight);
+  const x: number[] = Array(xParticuleCount).fill(null);
+  const y: number[] = Array(yParticuleCount).fill(null);
 
   const matrix: Position[] = [];
   x.forEach((_, x: number) => y.forEach((_2, y: number) => matrix.push({ x: x, y: y})));
 
   const baseColorObject = StaticColorBuilder.getInstance()
-      .setColor(chroma.random().hex())
+      .setBaseColor(chroma.css('green'))
       .build();
 
-  baseColor.value = baseColor.value ? baseColor.value : baseColorObject.hex();
 
-  const colorBuilder =  NoiseColorBuilder.getInstance()
+  const baseColorBuilder =  NoiseColorBuilder.getInstance()
       .setBaseColor(baseColorObject)
 
-  matrix.forEach((position: Position) => {
+  return matrix.map((position: Position) =>
     addParticule(
         ParticuleBuilder.getInstance()
             .setPosition(
                 {
-                  x: position.x * particuleWidth.value,
-                  y: position.y * particuleHeight.value,
+                  x: position.x * particuleWidth,
+                  y: position.y * particuleHeight,
                 }
             )
-            .setSize({width: particuleWidth.value , height: particuleHeight.value})
-            .setColorBuilder(colorBuilder)
+            .setSize({width: particuleWidth , height: particuleHeight})
+            .setColorBuilder(
+                baseColorBuilder.clone()
+                    .setBaseColor(
+                        chroma.css('green')
+                    )
+            )
+            // .setPositionModifier(
+            //     CameraFollower.getInstance()
+            //         .setOptions({
+            //           cameraPosition: getCameraPosition()
+            //         })
+            // )
             .build()
-    );
-  });
+    )
+  );
 }
 
-const start = () => {
-  const random = Math.random().toString();
+const createPlayer = () => {
+  return [addParticule(
+      ParticuleBuilder.getInstance()
+          .setPosition({x: 0, y: 0})
+          .setSize({width: 50, height: 50})
+          .setColorBuilder(
+              StaticColorBuilder.getInstance()
+                  .setBaseColor(chroma.css('brown'))
+          )
+          .setPositionModifier(
+              CameraFollower.getInstance()
+                  .setOptions({
+                    cameraPosition: getCameraPosition()
+                  })
+          )
+          .build()
+  )]
+}
+
+const start = async () => {
   deleteOldParticules();
-  createParticules();
-  drawParticules(
-      SetIntervalDrawer.getInstance(),
-      TextParticule.getInstance()
-          .fillTextUsing((seeded) => 'YANN')
+
+  // Initialisation du terrain
+  const terrain = createTerrain()
+  await drawParticules(
+      terrain,
+      DrawOnceDrawer.getInstance(),
+      ColorParticule.getInstance()
   );
-  initCameraMovement(particuleWidth.value, particuleHeight.value);
+
+  // Initialisation du joueur
+  const player = createPlayer();
+  drawParticules(
+      player,
+      AnimationFrameDrawer.getInstance(),
+      ColorParticule.getInstance()
+          .clone()
+          // .setRedrawChecker(
+          //     LastPositionChangeRedrawChecker.getInstance()
+          // )
+  );
+
+  // Initialisation du redraw automatique du terrain
+  drawParticules(
+      terrain,
+      SetIntervalDrawer.getInstance(),
+      ColorParticule.getInstance()
+  );
+
+  // Initialisation du mouvement de la caméra
+  initCameraMovement(50, 50);
 }
 
 onMounted(async () => {
   setCanvas(canvas.value.getContext("2d"));
   start();
-
 });
 
 </script>
 
 <template>
   <canvas
-      :width="canvasWidth"
-      :height="canvasHeight"
+      :width="1200"
+      :height="1200"
       id="canvas"
       ref="canvas"
       :style="getCanvasStyle()"
   />
-  <div id="generation-info">
-    <span>Couleur de base:  <input type="text" v-model="baseColor"></span><br/>
-    <span>Largeur du canvas: <input type="number" v-model="canvasWidth"></span><br/>
-    <span>Hauteur du canvas: <input type="number" v-model="canvasHeight"></span><br/>
-    <span>Largeur des particules: <input type="number" v-model="particuleWidth"></span><br/>
-    <span>Hauteur des particules: <input type="number" v-model="particuleHeight"></span><br/>
-    <span>
-      Mouvement actif
-      <input checked type="checkbox" @change="(e: InputEvent) => enableCameraMovement(e.target.checked)">
-    </span>
-    <button id="restart" @click="start">Regénérer</button>
-  </div>
 </template>
 
 <style lang="scss" scoped>

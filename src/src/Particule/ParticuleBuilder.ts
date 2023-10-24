@@ -1,6 +1,8 @@
-import ColorBuilderInterface from "../../Color/ColorBuilderInterface.ts";
-import StaticColorBuilder from "../../Color/Builder/StaticColorBuilder.ts";
-import ColorBuilder from "../../Color/ColorBuilderInterface.ts";
+import ColorBuilderInterface from "../Color/Builder/ColorBuilderInterface.ts";
+import StaticColorBuilder from "../Color/Builder/StaticColorBuilder.ts";
+import ColorBuilder from "../Color/Builder/ColorBuilderInterface.ts";
+import PositionModifierInterface from "./Position/PositionModifierInterface.ts";
+import chroma, {Color} from "chroma-js";
 
 export interface Position {
     x: number;
@@ -12,10 +14,14 @@ export interface Size {
     height: number;
 }
 
-export type ParticuleType<ColorBuilderType extends ColorBuilder> = {
+export type ParticuleType = {
+    basePosition: Position;
     position: Position;
+    lastPosition?: Position;
     size: Size;
-    color: ColorBuilderType;
+    colorBuilder: ColorBuilder;
+    canvasColor?: Color;
+    positionModifier: PositionModifierInterface;
 };
 
 export default class ParticuleBuilder {
@@ -23,11 +29,15 @@ export default class ParticuleBuilder {
     private _colorBuilder: ColorBuilderInterface;
     private _size: Size;
     private static instance: ParticuleBuilder;
+    private positionModifier?: PositionModifierInterface;
 
     private constructor() {
         this.setPosition({x: 200, y: 200})
             .setSize({width: 10, height: 10})
-            .setColorBuilder(StaticColorBuilder.getInstance().setColor('#cb0808'))
+            .setColorBuilder(
+                StaticColorBuilder.getInstance()
+                    .setBaseColor(chroma.css('red'))
+            )
         ;
     }
 
@@ -46,6 +56,12 @@ export default class ParticuleBuilder {
         return this;
     }
 
+    public setPositionModifier(modifier?: PositionModifierInterface): this
+    {
+        this.positionModifier = modifier;
+        return this;
+    }
+
     public setPosition(value: Position): this
     {
         this._position = value;
@@ -58,12 +74,14 @@ export default class ParticuleBuilder {
         return this;
     }
 
-    public build(): ParticuleType<any>
+    public build(): ParticuleType
     {
         return {
+            basePosition: this._position,
             position: this._position,
-            color: this._colorBuilder,
+            colorBuilder: this._colorBuilder,
             size: this._size,
+            positionModifier: this.positionModifier,
         };
     }
 }

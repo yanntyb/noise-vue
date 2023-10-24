@@ -2,13 +2,13 @@ import ParticuleDrawerInterface from "./ParticuleDrawerInterface.ts";
 import {ParticuleType} from "../ParticuleBuilder.ts";
 import {Ref} from "vue";
 
-export default class SetIntervalDrawer extends ParticuleDrawerInterface {
-    public static _instance: SetIntervalDrawer;
+export default class DrawOnceDrawer extends ParticuleDrawerInterface {
+    public static _instance: DrawOnceDrawer;
     public intervals: number[] = [];
 
-    public static getInstance(): SetIntervalDrawer {
+    public static getInstance(): DrawOnceDrawer {
         if (!this._instance) {
-            this._instance = new SetIntervalDrawer();
+            this._instance = new DrawOnceDrawer();
         }
         this._instance.resetIntervals();
         return this._instance;
@@ -18,9 +18,11 @@ export default class SetIntervalDrawer extends ParticuleDrawerInterface {
         super.sortParticules()
         const cyclesDone = [];
         this.particules.forEach((particule: Ref<ParticuleType>, index: number) => {
-            this.intervals.push(window.setInterval(() => {
+            const interval = window.setInterval(() => {
                 drawSingleParticle(particule);
-            }));
+                window.clearInterval(interval);
+            });
+            this.intervals.push(interval);
             cyclesDone.push(index);
 
         });

@@ -1,6 +1,10 @@
 import ParticuleDrawerInterface from "./ParticuleDrawerInterface.ts";
-import {Position} from "./ParticuleBuilder.ts";
+import {ParticuleType} from "../ParticuleBuilder.ts";
+import {Ref} from "vue";
 
+/**
+ * Performant quand pas beaucoup de particules
+ */
 export default class AnimationFrameDrawer extends ParticuleDrawerInterface {
     private static _instance: AnimationFrameDrawer;
 
@@ -12,24 +16,31 @@ export default class AnimationFrameDrawer extends ParticuleDrawerInterface {
     }
 
 
-    public drawParticules(drawingAtCallback:(position: Position) => void): void {
-        let indexes = Array(this.particules.length)
-            .fill(0)
-            .map((_, index) => index);
+    public async drawParticulesUsing(drawSingleParticle:(particule: Ref<ParticuleType>) => void): Promise<void> {
 
-        indexes = indexes
-            .sort(() => 0.5 - Math.random())
-            .sort(() => 0.5 - Math.random());
+        // Ici n'a pas d'effet car toutes les particules sont dessinées en même temps
+        super.sortParticules();
+        const cyclesDone = [];
 
-        let currentIndex = 0;
-        const drawParticule = (timestamp: number) => {
-            drawingAtCallback(this.particules[indexes[currentIndex]].value.position);
-            if (currentIndex < indexes.length - 1) {
-                currentIndex++;
-                requestAnimationFrame(drawParticule);
-            }
+        const drawParticule = (particule: Ref<ParticuleType>, index: number) => {
+            drawSingleParticle(particule);
+            cyclesDone.push(index);
+            requestAnimationFrame(() => drawParticule(particule, index));
+
         }
-        requestAnimationFrame(drawParticule);
+
+        this.particules.forEach((particule: Ref<ParticuleType>, index: number) => {
+            drawParticule(particule, index);
+        });
+
+        return await new Promise((resolve) => {
+            window.setInterval(() => {
+                if (cyclesDone.length !== this.particules.length) {
+                    return;
+                }
+                resolve();
+            });
+        })
     }
 
 }
