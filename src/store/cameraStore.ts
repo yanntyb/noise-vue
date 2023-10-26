@@ -1,6 +1,6 @@
 import {defineStore} from "pinia";
 import {Ref, ref} from "vue";
-import {onKeyDown, onKeyStroke} from "@vueuse/core";
+import {onKeyStroke} from "@vueuse/core";
 
 export const useCameraStore = defineStore('camera', () => {
     const cameraPosition = ref({x: 0, y: 0});

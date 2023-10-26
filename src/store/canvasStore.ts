@@ -22,21 +22,26 @@ export const useCanvasStore = defineStore('canvas', () =>{
 
 
     const drawSingleParticule =
-        async (particule: Ref<ParticuleType>, drawer: ParticuleDrawerAtInterface): Promise<any> => drawer
+        async (
+            particule: Ref<ParticuleType>,
+            drawer: ParticuleDrawerAtInterface,
+            overrideCanvas?: Ref<CanvasRenderingContext2D>
+        ): Promise<any> => drawer
                 .setParticules(particules.value)
-                .setCanvas(canvas)
+                .setCanvas(overrideCanvas || canvas)
                 .drawSingleParticule(particule);
 
     const drawParticules =
         async (
             particules: Ref<ParticuleType>[],
             drawer: ParticuleDrawerInterface,
-            singleParticuleDrawer: ParticuleDrawerAtInterface
+            singleParticuleDrawer: ParticuleDrawerAtInterface,
+            overrideCanvas?: Ref<CanvasRenderingContext2D>,
         ): Promise<any> => drawer
                 .setParticules(particules)
                 .drawParticulesUsing(
                     (particule: Ref<ParticuleType>) => {
-                        drawSingleParticule(particule, singleParticuleDrawer);
+                        drawSingleParticule(particule, singleParticuleDrawer, overrideCanvas);
                     }
                 );
 

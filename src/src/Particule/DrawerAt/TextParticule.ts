@@ -1,7 +1,6 @@
 import ParticuleDrawerAtInterface from "./ParticuleDrawerAtInterface.ts";
 import {Ref} from "vue";
-import {ParticuleType, Position} from "../ParticuleBuilder.ts";
-import NoiseColorBuilder from "../../Color/Builder/NoiseColorBuilder.ts";
+import {ParticuleType} from "../ParticuleBuilder.ts";
 
 export default class TextParticule extends ParticuleDrawerAtInterface {
     public static instance: TextParticule;
@@ -15,7 +14,7 @@ export default class TextParticule extends ParticuleDrawerAtInterface {
     public static getInstance(): TextParticule
     {
         if (!this.instance) {
-            this.instance = new TextParticule();
+            this.instance = new this();
         }
         return this.instance;
     }
@@ -25,33 +24,42 @@ export default class TextParticule extends ParticuleDrawerAtInterface {
         return this;
     }
 
-    public async drawSingleParticule(position: Position): Promise<any> {
-        const particule = this.particules
-            .find((particule: Ref<ParticuleType<NoiseColorBuilder>>) => particule.value.position === position);
+    public async drawSingleParticule(particule: Ref<ParticuleType>): Promise<any> {
+        if (!particule.value.canvasColor) {
+            particule.value.canvasColor = particule.value.colorBuilder
+                .setOptions({
+                    ...particule.value.colorBuilder.options,
+                    position: particule.value.position,
+                })
+                .build();
 
-         particule.value.colorBuilder
-            .setSeed(1)
-            .setX(particule.value.position.x + this.cameraPosition.value.x)
-            .setY(particule.value.position.y + this.cameraPosition.value.y)
-            .build();
+        }
 
-        const noised = particule.value.colorBuilder.getValue();
-
-        this.canvas.value.fillStyle = particule.value.colorBuilder.build().hex();
+        this.canvas.value.fillStyle = particule.value.canvasColor.hex();
         this.canvas.value.font = particule.value.size.width + "px Arial";
+        this.modifyPosition(particule);
 
-        // this.canvas.value.clearRect(
-        //     particule.value.position.x,
-        //     particule.value.position.y,
-        //     particule.value.size.width,
-        //     particule.value.size.height
-        // );
+        if (!this.hasToRedraw(particule.value)) {
+            return;
+        }
+
+        this.canvas.value.clearRect(
+            particule.value.lastPosition?.x,
+            particule.value.lastPosition?.y,
+            particule.value.size.width,
+            particule.value.size.height
+        );
 
         this.canvas.value.fillText(
-            this.fillTextUsingCallback(noised),
+            this.fillTextUsingCallback('test'),
             particule.value.position.x,
             particule.value.position.y,
-            particule.value.size.width,
-        )
+        );
+
+        particule.value.lastPosition =  particule.value.position;
+    }
+
+    private modifyPosition(particule: Ref<ParticuleType>): void {
+        particule.value.position = particule.value.positionModifier?.getModifierPosition(particule) ?? particule.value.position;
     }
 }

@@ -14,6 +14,11 @@ export default class DrawOnceDrawer extends ParticuleDrawerInterface {
         return this._instance;
     }
 
+    public clone(): this
+    {
+        return Object.assign(Object.create(this), this);
+    }
+
     public async drawParticulesUsing(drawSingleParticle:(particule: Ref<ParticuleType>) => void): Promise<void> {
         super.sortParticules()
         const cyclesDone = [];

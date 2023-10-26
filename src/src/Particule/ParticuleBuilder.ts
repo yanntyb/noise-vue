@@ -1,6 +1,5 @@
-import ColorBuilderInterface from "../Color/Builder/ColorBuilderInterface.ts";
-import StaticColorBuilder from "../Color/Builder/StaticColorBuilder.ts";
 import ColorBuilder from "../Color/Builder/ColorBuilderInterface.ts";
+import StaticColorBuilder from "../Color/Builder/StaticColorBuilder.ts";
 import PositionModifierInterface from "./Position/PositionModifierInterface.ts";
 import chroma, {Color} from "chroma-js";
 
@@ -26,7 +25,7 @@ export type ParticuleType = {
 
 export default class ParticuleBuilder {
     private _position: Position;
-    private _colorBuilder: ColorBuilderInterface;
+    private _colorBuilder: ColorBuilder;
     private _size: Size;
     private static instance: ParticuleBuilder;
     private positionModifier?: PositionModifierInterface;
@@ -50,7 +49,7 @@ export default class ParticuleBuilder {
     }
 
 
-    public setColorBuilder(builder: ColorBuilderInterface): this
+    public setColorBuilder(builder: ColorBuilder): this
     {
         this._colorBuilder = builder;
         return this;

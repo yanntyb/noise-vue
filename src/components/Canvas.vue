@@ -3,7 +3,7 @@
 import {onMounted, Ref, ref} from "vue";
 import {useCanvasStore} from "../store/canvasStore.ts";
 import {useCameraStore} from "../store/cameraStore.ts";
-import ParticuleBuilder, {ParticuleType, Position} from "../src/Particule/ParticuleBuilder.ts";
+import ParticuleBuilder, {ParticuleType} from "../src/Particule/ParticuleBuilder.ts";
 import NoiseColorBuilder from "../src/Color/Builder/NoiseColorBuilder.ts";
 const {setCanvas, drawParticules, addParticule, deleteOldParticules} = useCanvasStore();
 const {getCameraPosition, initCameraMovement} = useCameraStore();
@@ -17,6 +17,7 @@ import DrawOnceDrawer from "../src/Particule/Drawer/DrawOnceDrawer.ts";
 import ParticuleMatrixBuilder from "../utils/ParticuleMatrixBuilder.ts";
 
 let canvas: Ref<HTMLCanvasElement> = ref(null);
+let canvasContext: Ref<CanvasRenderingContext2D> = ref(null);
 
 
 
@@ -63,35 +64,43 @@ const createTerrain = () => {
 }
 
 const createPlayer = () => {
-  return [
-      addParticule(
-          ParticuleBuilder.getInstance()
-            .setPosition({x: 0, y: 0})
-            .setSize({width: 50, height: 50})
-            .setColorBuilder(
-                StaticColorBuilder.getInstance()
-                    .setBaseColor(chroma.css('brown'))
-            )
-            .setPositionModifier(
-                CameraFollower.getInstance()
-                    .setOptions({
-                      cameraPosition: getCameraPosition()
-                    })
-            )
-            .build()
-      ),
-  ]
+  const baseBuilder = ParticuleBuilder.getInstance()
+      .setSize({width: 25, height: 25})
+      .setColorBuilder(
+          NoiseColorBuilder.getInstance()
+              .setBaseColor(chroma.css('red'))
+      )
+      .setPositionModifier(
+          CameraFollower.getInstance()
+              .setOptions({
+                cameraPosition: getCameraPosition(),
+
+              })
+      )
+
+  return ParticuleMatrixBuilder.make()
+      .setParticuleBuilder(baseBuilder)
+      .fromPattern([
+          [1, 0, 0, 1],
+          [0, 1, 1, 0],
+          [0, 1, 1, 0],
+          [1, 0, 0, 1],
+
+      ], {x: 100, y: 100})
+      .build()
+      .map((particule: ParticuleType) => addParticule(particule));
+
 }
 
 const start = async () => {
-  deleteOldParticules();
 
-  // Initialisation du terrain
+  //Initialisation du terrain
   const terrain = createTerrain()
   await drawParticules(
       terrain,
       DrawOnceDrawer.getInstance(),
-      ColorParticule.getInstance()
+      ColorParticule.getInstance(),
+      canvasContext
   );
 
   // Initialisation du joueur
@@ -100,17 +109,19 @@ const start = async () => {
       player,
       AnimationFrameDrawer.getInstance(),
       ColorParticule.getInstance()
-          .clone()
+          .clone(),
           // .setRedrawChecker(
           //     LastPositionChangeRedrawChecker.getInstance()
-          // )
+          // ),
+      canvasContext
   );
 
-  // Initialisation du redraw automatique du terrain
+  //Initialisation du redraw automatique du terrain
   drawParticules(
       terrain,
       SetIntervalDrawer.getInstance(),
-      ColorParticule.getInstance()
+      ColorParticule.getInstance(),
+      canvasContext
   );
 
   // Initialisation du mouvement de la caméra
@@ -118,13 +129,14 @@ const start = async () => {
 }
 
 onMounted(async () => {
-  setCanvas(canvas.value.getContext("2d"));
+  canvasContext.value = canvas.value.getContext("2d");
   start();
 });
 
 </script>
 
 <template>
+
   <canvas
       :width="1200"
       :height="1200"
@@ -141,43 +153,8 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-#vision {
-  border: 1px solid white;
-  z-index: 100;
-}
-
-#generation-info {
-  position: absolute;
-  top: 0;
-  left: 0;
-  color: white;
-  font-size: 20px;
-  font-family: monospace;
-  padding: 10px;
-
-  input {
-    background-color: transparent;
-    border: none;
-    color: white;
-    font-size: 20px;
-    font-family: monospace;
-    padding: 10px;
-    outline: none;
-  }
-
-  #restart{
-    background-color: transparent;
-    border: 1px solid white;
-    color: white;
-    font-size: 20px;
-    font-family: monospace;
-    padding: 10px;
-    outline: none;
-    cursor: pointer;
-  }
-
+  width: 50vw;
+  height: 50vw;
 }
 
 </style>
