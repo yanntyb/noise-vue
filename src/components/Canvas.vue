@@ -3,19 +3,18 @@
 import {onMounted, Ref, ref} from "vue";
 import {useCanvasStore} from "../store/canvasStore.ts";
 import {useCameraStore} from "../store/cameraStore.ts";
-import ParticuleBuilder, {Position} from "../src/Particule/ParticuleBuilder.ts";
+import ParticuleBuilder, {ParticuleType, Position} from "../src/Particule/ParticuleBuilder.ts";
 import NoiseColorBuilder from "../src/Color/Builder/NoiseColorBuilder.ts";
 const {setCanvas, drawParticules, addParticule, deleteOldParticules} = useCanvasStore();
-const {getCameraPosition, initCameraMovement, enableCameraMovement} = useCameraStore();
+const {getCameraPosition, initCameraMovement} = useCameraStore();
 import chroma from "chroma-js";
 import StaticColorBuilder from "../src/Color/Builder/StaticColorBuilder.ts";
 import SetIntervalDrawer from "../src/Particule/Drawer/SetIntervalDrawer.ts";
 import ColorParticule from "../src/Particule/DrawerAt/ColorParticule.ts";
 import CameraFollower from "../src/Particule/Position/CameraFollower.ts";
 import AnimationFrameDrawer from "../src/Particule/Drawer/AnimationFrameDrawer.ts";
-import RandomSorter from "../src/Particule/Drawer/BeforeDrawingAtSorter/RandomSorter.ts";
-import LastPositionChangeRedrawChecker from "../src/Particule/RedrawChecker/LastPositionChangeRedrawChecker.ts";
 import DrawOnceDrawer from "../src/Particule/Drawer/DrawOnceDrawer.ts";
+import ParticuleMatrixBuilder from "../utils/ParticuleMatrixBuilder.ts";
 
 let canvas: Ref<HTMLCanvasElement> = ref(null);
 
@@ -39,61 +38,49 @@ const createTerrain = () => {
   const x: number[] = Array(xParticuleCount).fill(null);
   const y: number[] = Array(yParticuleCount).fill(null);
 
-  const matrix: Position[] = [];
-  x.forEach((_, x: number) => y.forEach((_2, y: number) => matrix.push({ x: x, y: y})));
-
   const baseColorObject = StaticColorBuilder.getInstance()
       .setBaseColor(chroma.css('green'))
       .build();
 
-
   const baseColorBuilder =  NoiseColorBuilder.getInstance()
       .setBaseColor(baseColorObject)
 
-  return matrix.map((position: Position) =>
-    addParticule(
-        ParticuleBuilder.getInstance()
-            .setPosition(
-                {
-                  x: position.x * particuleWidth,
-                  y: position.y * particuleHeight,
-                }
-            )
-            .setSize({width: particuleWidth , height: particuleHeight})
-            .setColorBuilder(
-                baseColorBuilder.clone()
-                    .setBaseColor(
-                        chroma.css('green')
-                    )
-            )
-            // .setPositionModifier(
-            //     CameraFollower.getInstance()
-            //         .setOptions({
-            //           cameraPosition: getCameraPosition()
-            //         })
-            // )
-            .build()
-    )
-  );
+  const matrix = ParticuleMatrixBuilder.make()
+      .setParticuleBuilder(
+          ParticuleBuilder.getInstance()
+              .setSize({width: particuleWidth , height: particuleHeight})
+              .setColorBuilder(
+                  baseColorBuilder.clone()
+                      .setBaseColor(
+                          chroma.css('green')
+                      )
+              )
+      )
+
+  x.forEach((_, x: number) => y.forEach((_2, y: number) => matrix.addPoint({ x: x * particuleWidth, y: y * particuleHeight})));
+
+  return matrix.build().map((particule: ParticuleType) => addParticule(particule));
 }
 
 const createPlayer = () => {
-  return [addParticule(
-      ParticuleBuilder.getInstance()
-          .setPosition({x: 0, y: 0})
-          .setSize({width: 50, height: 50})
-          .setColorBuilder(
-              StaticColorBuilder.getInstance()
-                  .setBaseColor(chroma.css('brown'))
-          )
-          .setPositionModifier(
-              CameraFollower.getInstance()
-                  .setOptions({
-                    cameraPosition: getCameraPosition()
-                  })
-          )
-          .build()
-  )]
+  return [
+      addParticule(
+          ParticuleBuilder.getInstance()
+            .setPosition({x: 0, y: 0})
+            .setSize({width: 50, height: 50})
+            .setColorBuilder(
+                StaticColorBuilder.getInstance()
+                    .setBaseColor(chroma.css('brown'))
+            )
+            .setPositionModifier(
+                CameraFollower.getInstance()
+                    .setOptions({
+                      cameraPosition: getCameraPosition()
+                    })
+            )
+            .build()
+      ),
+  ]
 }
 
 const start = async () => {
